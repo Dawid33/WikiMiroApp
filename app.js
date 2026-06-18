@@ -181,6 +181,19 @@ function formatDate(d) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+async function removeExistingChart() {
+  const frames = await miro.board.get({ type: "frame" });
+  for (const frame of frames) {
+    if (frame.title === "Product Roadmap") {
+      const children = await frame.getChildren();
+      for (const child of children) {
+        await miro.board.remove(child);
+      }
+      await miro.board.remove(frame);
+    }
+  }
+}
+
 async function renderGanttChart(items) {
   const { minDate, maxDate } = computeTimeline(items);
   const totalDays = daysBetween(minDate, maxDate);
@@ -354,6 +367,7 @@ async function init() {
   const saveBtn = document.getElementById("save-config-btn");
   const clearBtn = document.getElementById("clear-config-btn");
   const fetchBtn = document.getElementById("fetch-btn");
+  const refreshBtn = document.getElementById("refresh-btn");
 
   const userInfo = await miro.board.getUserInfo();
   const currentUserId = userInfo.id;
@@ -416,13 +430,14 @@ async function init() {
     }
   });
 
-  fetchBtn.addEventListener("click", async () => {
+  async function generateChart() {
     if (!config.org || !config.project || !config.pat) {
       showStatus("Please configure the connection in Admin Setup.", "error");
       return;
     }
 
     fetchBtn.disabled = true;
+    refreshBtn.disabled = true;
     showStatus("Fetching work items from Azure DevOps...", "");
     document.getElementById("preview").innerHTML = "";
 
@@ -432,19 +447,26 @@ async function init() {
 
       if (items.length === 0) {
         showStatus("No work items with Start/Target dates found.", "error");
-        fetchBtn.disabled = false;
         return;
       }
 
+      showStatus("Removing existing chart...", "");
+      await removeExistingChart();
+
       showStatus(`Rendering Gantt chart with ${items.length} items...`, "");
       await renderGanttChart(items);
+      refreshBtn.style.display = "block";
       showStatus("Gantt chart created on the board!", "success");
     } catch (err) {
       showStatus("Error: " + err.message, "error");
     } finally {
       fetchBtn.disabled = false;
+      refreshBtn.disabled = false;
     }
-  });
+  }
+
+  fetchBtn.addEventListener("click", generateChart);
+  refreshBtn.addEventListener("click", generateChart);
 }
 
 miro.board.ui.on("icon:click", async () => {
