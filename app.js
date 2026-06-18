@@ -4,6 +4,7 @@ const STORAGE_KEYS = {
   pat: "devops_pat",
   type: "devops_type",
   area: "devops_area",
+  adminId: "devops_admin_id",
 };
 
 const COLORS = {
@@ -35,13 +36,20 @@ async function loadBoardConfig() {
   };
 }
 
-async function saveBoardConfig(config) {
+async function saveBoardConfig(config, userId) {
   const collection = miro.board.storage.collection("config");
   await collection.set(STORAGE_KEYS.org, config.org);
   await collection.set(STORAGE_KEYS.project, config.project);
   await collection.set(STORAGE_KEYS.pat, config.pat);
   await collection.set(STORAGE_KEYS.type, config.type);
   await collection.set(STORAGE_KEYS.area, config.area);
+  await collection.set(STORAGE_KEYS.adminId, userId);
+}
+
+async function getAdminId() {
+  const collection = miro.board.storage.collection("config");
+  const data = await collection.get();
+  return data[STORAGE_KEYS.adminId] || null;
 }
 
 async function clearBoardConfig() {
@@ -51,6 +59,7 @@ async function clearBoardConfig() {
   await collection.remove(STORAGE_KEYS.pat);
   await collection.remove(STORAGE_KEYS.type);
   await collection.remove(STORAGE_KEYS.area);
+  await collection.remove(STORAGE_KEYS.adminId);
 }
 
 function showStatus(message, type) {
@@ -314,11 +323,13 @@ function renderPreview(items) {
   preview.innerHTML = `<h3>${items.length} work items found</h3>${html}${extra}`;
 }
 
-function updateUI(config) {
+function updateUI(config, isAdmin) {
   const banner = document.getElementById("configured-banner");
   const connectedOrg = document.getElementById("connected-org");
   const adminSection = document.getElementById("admin-section");
   const fetchBtn = document.getElementById("fetch-btn");
+
+  adminSection.style.display = isAdmin ? "block" : "none";
 
   if (config.org && config.pat) {
     banner.style.display = "block";
@@ -327,7 +338,9 @@ function updateUI(config) {
     fetchBtn.disabled = false;
   } else {
     banner.style.display = "none";
-    adminSection.setAttribute("open", "");
+    if (isAdmin) {
+      adminSection.setAttribute("open", "");
+    }
     fetchBtn.disabled = true;
   }
 }
@@ -342,6 +355,9 @@ async function init() {
   const clearBtn = document.getElementById("clear-config-btn");
   const fetchBtn = document.getElementById("fetch-btn");
 
+  const userInfo = await miro.board.getUserInfo();
+  const currentUserId = userInfo.id;
+
   let config;
   try {
     config = await loadBoardConfig();
@@ -349,13 +365,16 @@ async function init() {
     config = { org: "", project: "", pat: "", type: "Epic", area: "" };
   }
 
+  const adminId = await getAdminId();
+  const isAdmin = !adminId || adminId === currentUserId;
+
   orgInput.value = config.org;
   projectInput.value = config.project;
   patInput.value = config.pat;
   if (config.type) typeSelect.value = config.type;
   areaInput.value = config.area;
 
-  updateUI(config);
+  updateUI(config, isAdmin);
 
   saveBtn.addEventListener("click", async () => {
     const newConfig = {
@@ -372,9 +391,9 @@ async function init() {
     }
 
     try {
-      await saveBoardConfig(newConfig);
+      await saveBoardConfig(newConfig, currentUserId);
       config = newConfig;
-      updateUI(config);
+      updateUI(config, isAdmin);
       showStatus("Config saved to board storage!", "success");
     } catch (err) {
       showStatus("Failed to save: " + err.message, "error");
@@ -390,7 +409,7 @@ async function init() {
       patInput.value = "";
       typeSelect.value = "Epic";
       areaInput.value = "";
-      updateUI(config);
+      updateUI(config, isAdmin);
       showStatus("Config cleared.", "success");
     } catch (err) {
       showStatus("Failed to clear: " + err.message, "error");
