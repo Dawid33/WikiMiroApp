@@ -1,4 +1,10 @@
-const STORAGE_KEY = "devops-roadmap-config";
+const STORAGE_KEYS = {
+  org: "devops_org",
+  project: "devops_project",
+  pat: "devops_pat",
+  type: "devops_type",
+  area: "devops_area",
+};
 
 const COLORS = {
   Epic: { fill: "#4262ff", text: "#ffffff" },
@@ -17,16 +23,34 @@ const GANTT = {
   padding: 40,
 };
 
-function loadConfig() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-  } catch {
-    return {};
-  }
+async function loadBoardConfig() {
+  const collection = miro.board.storage.collection("config");
+  const data = await collection.get();
+  return {
+    org: data[STORAGE_KEYS.org] || "",
+    project: data[STORAGE_KEYS.project] || "",
+    pat: data[STORAGE_KEYS.pat] || "",
+    type: data[STORAGE_KEYS.type] || "Epic",
+    area: data[STORAGE_KEYS.area] || "",
+  };
 }
 
-function saveConfig(config) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+async function saveBoardConfig(config) {
+  const collection = miro.board.storage.collection("config");
+  await collection.set(STORAGE_KEYS.org, config.org);
+  await collection.set(STORAGE_KEYS.project, config.project);
+  await collection.set(STORAGE_KEYS.pat, config.pat);
+  await collection.set(STORAGE_KEYS.type, config.type);
+  await collection.set(STORAGE_KEYS.area, config.area);
+}
+
+async function clearBoardConfig() {
+  const collection = miro.board.storage.collection("config");
+  await collection.remove(STORAGE_KEYS.org);
+  await collection.remove(STORAGE_KEYS.project);
+  await collection.remove(STORAGE_KEYS.pat);
+  await collection.remove(STORAGE_KEYS.type);
+  await collection.remove(STORAGE_KEYS.area);
 }
 
 function showStatus(message, type) {
@@ -290,6 +314,24 @@ function renderPreview(items) {
   preview.innerHTML = `<h3>${items.length} work items found</h3>${html}${extra}`;
 }
 
+function updateUI(config) {
+  const banner = document.getElementById("configured-banner");
+  const connectedOrg = document.getElementById("connected-org");
+  const adminSection = document.getElementById("admin-section");
+  const fetchBtn = document.getElementById("fetch-btn");
+
+  if (config.org && config.pat) {
+    banner.style.display = "block";
+    connectedOrg.textContent = `${config.org}/${config.project}`;
+    adminSection.removeAttribute("open");
+    fetchBtn.disabled = false;
+  } else {
+    banner.style.display = "none";
+    adminSection.setAttribute("open", "");
+    fetchBtn.disabled = true;
+  }
+}
+
 async function init() {
   const orgInput = document.getElementById("org-input");
   const projectInput = document.getElementById("project-input");
@@ -297,35 +339,67 @@ async function init() {
   const typeSelect = document.getElementById("type-select");
   const areaInput = document.getElementById("area-input");
   const saveBtn = document.getElementById("save-config-btn");
+  const clearBtn = document.getElementById("clear-config-btn");
   const fetchBtn = document.getElementById("fetch-btn");
 
-  const config = loadConfig();
-  if (config.org) orgInput.value = config.org;
-  if (config.project) projectInput.value = config.project;
-  if (config.pat) patInput.value = config.pat;
-  if (config.type) typeSelect.value = config.type;
-  if (config.area) areaInput.value = config.area;
+  let config;
+  try {
+    config = await loadBoardConfig();
+  } catch {
+    config = { org: "", project: "", pat: "", type: "Epic", area: "" };
+  }
 
-  saveBtn.addEventListener("click", () => {
-    saveConfig({
+  orgInput.value = config.org;
+  projectInput.value = config.project;
+  patInput.value = config.pat;
+  if (config.type) typeSelect.value = config.type;
+  areaInput.value = config.area;
+
+  updateUI(config);
+
+  saveBtn.addEventListener("click", async () => {
+    const newConfig = {
       org: orgInput.value.trim(),
       project: projectInput.value.trim(),
       pat: patInput.value.trim(),
       type: typeSelect.value,
       area: areaInput.value.trim(),
-    });
-    showStatus("Settings saved!", "success");
+    };
+
+    if (!newConfig.org || !newConfig.project || !newConfig.pat) {
+      showStatus("Organization, Project, and PAT are required.", "error");
+      return;
+    }
+
+    try {
+      await saveBoardConfig(newConfig);
+      config = newConfig;
+      updateUI(config);
+      showStatus("Config saved to board storage!", "success");
+    } catch (err) {
+      showStatus("Failed to save: " + err.message, "error");
+    }
+  });
+
+  clearBtn.addEventListener("click", async () => {
+    try {
+      await clearBoardConfig();
+      config = { org: "", project: "", pat: "", type: "Epic", area: "" };
+      orgInput.value = "";
+      projectInput.value = "";
+      patInput.value = "";
+      typeSelect.value = "Epic";
+      areaInput.value = "";
+      updateUI(config);
+      showStatus("Config cleared.", "success");
+    } catch (err) {
+      showStatus("Failed to clear: " + err.message, "error");
+    }
   });
 
   fetchBtn.addEventListener("click", async () => {
-    const org = orgInput.value.trim();
-    const project = projectInput.value.trim();
-    const pat = patInput.value.trim();
-    const types = typeSelect.value;
-    const area = areaInput.value.trim();
-
-    if (!org || !project || !pat) {
-      showStatus("Please fill in Organization, Project, and PAT.", "error");
+    if (!config.org || !config.project || !config.pat) {
+      showStatus("Please configure the connection in Admin Setup.", "error");
       return;
     }
 
@@ -334,7 +408,7 @@ async function init() {
     document.getElementById("preview").innerHTML = "";
 
     try {
-      const items = await fetchWorkItems(org, project, pat, types, area);
+      const items = await fetchWorkItems(config.org, config.project, config.pat, config.type, config.area);
       renderPreview(items);
 
       if (items.length === 0) {

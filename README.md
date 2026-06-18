@@ -7,7 +7,8 @@ A Miro app that connects to Azure DevOps, fetches work items with dates, and ren
 - Fetches Epics, Features, Stories, or PBIs from Azure DevOps
 - Renders a color-coded Gantt chart with timeline headers
 - Filters by area path
-- PAT entered at runtime and stored in browser localStorage only — never in the repo
+- Config stored via `miro.board.storage` — set once by an admin, available to all board members
+- PAT never committed to the repo
 
 ## Setup
 
@@ -16,7 +17,7 @@ A Miro app that connects to Azure DevOps, fetches work items with dates, and ren
 1. Go to Azure DevOps > User Settings > Personal Access Tokens
 2. Click **New Token**
 3. Set scope: **Work Items > Read**
-4. Copy the token — you'll paste it into the Miro panel at runtime
+4. Copy the token
 
 ### 2. Enable GitHub Pages
 
@@ -34,16 +35,20 @@ Your app will be available at: `https://dawid33.github.io/WikiMiroApp/`
 4. Under permissions, enable **boards:read** and **boards:write**
 5. Install the app to your team
 
-### 4. Use the App
+### 4. Admin: Configure the Board
 
 1. Open a Miro board and launch the app from the toolbar
-2. Enter your Azure DevOps org, project, and PAT
-3. Click **Save Settings** (stored in your browser only)
-4. Click **Fetch & Generate Gantt Chart**
+2. Expand **Admin Setup**
+3. Enter your org, project, PAT, work item types, and optional area path
+4. Click **Save to Board** — this stores the config in Miro's board-level storage
 
-## Security
+### 5. All Users: Generate the Chart
 
-The PAT is stored in your browser's `localStorage` and sent directly from your browser to the Azure DevOps API. It never passes through any intermediary server or gets committed to the repository. Each user enters their own PAT.
+Once an admin has saved the config, any board member can open the app panel and click **Fetch & Generate Gantt Chart** — no PAT entry needed on their side.
+
+## How Storage Works
+
+The app uses `miro.board.storage` (a key-value store scoped to the board + app combination). The PAT is stored there — accessible to anyone with board access but never committed to source control or exposed outside Miro.
 
 ## Local Development
 

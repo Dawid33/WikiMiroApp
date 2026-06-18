@@ -29,10 +29,39 @@ h1 {
   margin-bottom: 16px;
 }
 
+.configured-banner {
+  background: #e8f5e9;
+  border: 1px solid #c8e6c9;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+details {
+  margin-bottom: 0;
+}
+
+summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+summary:hover {
+  color: #333;
+}
+
 hr {
   border: none;
   border-top: 1px solid #eee;
   margin: 16px 0;
+}
+
+.config-section {
+  padding-top: 8px;
 }
 
 .config-section label {
@@ -103,6 +132,16 @@ hr {
 
 .btn-secondary:hover {
   background: #e0e0e0;
+}
+
+.btn-danger {
+  background: #fff;
+  color: #e53935;
+  border: 1px solid #e53935;
+}
+
+.btn-danger:hover {
+  background: #fbe9e7;
 }
 
 .actions-section {
