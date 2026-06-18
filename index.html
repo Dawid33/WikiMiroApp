@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wiki Miro App</title>
+    <script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <h1>Wiki to Miro</h1>
+      <p class="description">Search Wikipedia and add articles as sticky notes to your board.</p>
+
+      <div class="search-section">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Search Wikipedia..."
+          autocomplete="off"
+        />
+        <button id="search-btn" class="btn btn-primary">Search</button>
+      </div>
+
+      <div id="results" class="results-section"></div>
+
+      <div id="status" class="status-message"></div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
