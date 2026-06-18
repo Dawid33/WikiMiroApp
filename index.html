@@ -3,30 +3,72 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Wiki Miro App</title>
+    <title>Azure DevOps Roadmap - Miro</title>
     <script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
+    <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="app-container">
-      <h1>Wiki to Miro</h1>
-      <p class="description">Search Wikipedia and add articles as sticky notes to your board.</p>
+      <h1>DevOps Roadmap</h1>
+      <p class="description">Sign in with your Microsoft account to generate a Gantt chart from Azure DevOps.</p>
 
-      <div class="search-section">
-        <input
-          type="text"
-          id="search-input"
-          placeholder="Search Wikipedia..."
-          autocomplete="off"
-        />
-        <button id="search-btn" class="btn btn-primary">Search</button>
+      <div id="auth-section" class="auth-section">
+        <div id="signed-out">
+          <div class="config-section">
+            <label for="client-id-input">App (Client) ID</label>
+            <input type="text" id="client-id-input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+
+            <label for="tenant-id-input">Tenant ID</label>
+            <input type="text" id="tenant-id-input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx or 'common'" />
+
+            <button id="save-app-btn" class="btn btn-secondary">Save App Config</button>
+          </div>
+          <button id="sign-in-btn" class="btn btn-primary">Sign in with Microsoft</button>
+        </div>
+
+        <div id="signed-in" style="display: none;">
+          <div class="user-info">
+            <span id="user-name"></span>
+            <button id="sign-out-btn" class="btn-link">Sign out</button>
+          </div>
+        </div>
       </div>
 
-      <div id="results" class="results-section"></div>
+      <hr />
+
+      <div class="config-section">
+        <label for="org-input">Organization</label>
+        <input type="text" id="org-input" placeholder="my-org" />
+
+        <label for="project-input">Project</label>
+        <input type="text" id="project-input" placeholder="MyProject" />
+
+        <label for="type-select">Work Item Types</label>
+        <select id="type-select">
+          <option value="Epic">Epics</option>
+          <option value="Feature">Features</option>
+          <option value="Epic,Feature">Epics + Features</option>
+          <option value="User Story,Product Backlog Item">Stories / PBIs</option>
+        </select>
+
+        <label for="area-input">Area Path (optional)</label>
+        <input type="text" id="area-input" placeholder="MyProject\\TeamA" />
+
+        <button id="save-config-btn" class="btn btn-secondary">Save Settings</button>
+      </div>
+
+      <hr />
+
+      <div class="actions-section">
+        <button id="fetch-btn" class="btn btn-primary" disabled>Fetch & Generate Gantt Chart</button>
+      </div>
 
       <div id="status" class="status-message"></div>
+      <div id="preview" class="preview-section"></div>
     </div>
 
+    <script src="auth.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
