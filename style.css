@@ -64,6 +64,12 @@ hr {
   border-color: #4262ff;
 }
 
+.field-hint {
+  font-size: 11px;
+  color: #888;
+  margin-top: 3px;
+}
+
 .btn {
   padding: 10px 16px;
   border: none;
@@ -97,34 +103,6 @@ hr {
 
 .btn-secondary:hover {
   background: #e0e0e0;
-}
-
-.auth-section {
-  margin-bottom: 0;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  background: #f0f7ff;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.btn-link {
-  background: none;
-  border: none;
-  color: #4262ff;
-  font-size: 12px;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.btn-link:hover {
-  color: #3451d1;
 }
 
 .actions-section {

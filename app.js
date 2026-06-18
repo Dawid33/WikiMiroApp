@@ -35,7 +35,11 @@ function showStatus(message, type) {
   el.className = "status-message" + (type ? " " + type : "");
 }
 
-async function fetchWorkItems(org, project, accessToken, workItemTypes, areaPath) {
+function getAuthHeader(pat) {
+  return "Basic " + btoa(":" + pat);
+}
+
+async function fetchWorkItems(org, project, pat, workItemTypes, areaPath) {
   const typeConditions = workItemTypes
     .split(",")
     .map((t) => `[System.WorkItemType] = '${t.trim()}'`)
@@ -53,7 +57,7 @@ async function fetchWorkItems(org, project, accessToken, workItemTypes, areaPath
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: getAuthHeader(pat),
     },
     body: JSON.stringify({ query: wiql }),
   });
@@ -87,7 +91,7 @@ async function fetchWorkItems(org, project, accessToken, workItemTypes, areaPath
 
     const itemsUrl = `https://dev.azure.com/${org}/_apis/wit/workitems?ids=${batch.join(",")}&fields=${fields}&api-version=7.1`;
     const itemsResponse = await fetch(itemsUrl, {
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: { Authorization: getAuthHeader(pat) },
     });
 
     if (!itemsResponse.ok) {
@@ -286,86 +290,27 @@ function renderPreview(items) {
   preview.innerHTML = `<h3>${items.length} work items found</h3>${html}${extra}`;
 }
 
-function updateUI() {
-  const signedOutDiv = document.getElementById("signed-out");
-  const signedInDiv = document.getElementById("signed-in");
-  const fetchBtn = document.getElementById("fetch-btn");
-  const userName = document.getElementById("user-name");
-
-  if (isSignedIn()) {
-    signedOutDiv.style.display = "none";
-    signedInDiv.style.display = "block";
-    fetchBtn.disabled = false;
-    userName.textContent = getAccountName();
-  } else {
-    signedOutDiv.style.display = "block";
-    signedInDiv.style.display = "none";
-    fetchBtn.disabled = true;
-  }
-}
-
 async function init() {
   const orgInput = document.getElementById("org-input");
   const projectInput = document.getElementById("project-input");
+  const patInput = document.getElementById("pat-input");
   const typeSelect = document.getElementById("type-select");
   const areaInput = document.getElementById("area-input");
-  const clientIdInput = document.getElementById("client-id-input");
-  const tenantIdInput = document.getElementById("tenant-id-input");
-  const saveAppBtn = document.getElementById("save-app-btn");
-  const signInBtn = document.getElementById("sign-in-btn");
-  const signOutBtn = document.getElementById("sign-out-btn");
-  const saveConfigBtn = document.getElementById("save-config-btn");
+  const saveBtn = document.getElementById("save-config-btn");
   const fetchBtn = document.getElementById("fetch-btn");
-
-  const authConfig = loadAuthConfig();
-  if (authConfig.clientId) clientIdInput.value = authConfig.clientId;
-  if (authConfig.tenantId) tenantIdInput.value = authConfig.tenantId;
 
   const config = loadConfig();
   if (config.org) orgInput.value = config.org;
   if (config.project) projectInput.value = config.project;
+  if (config.pat) patInput.value = config.pat;
   if (config.type) typeSelect.value = config.type;
   if (config.area) areaInput.value = config.area;
 
-  if (authConfig.clientId) {
-    try {
-      await initMsal(authConfig.clientId, authConfig.tenantId);
-      await handleRedirect();
-    } catch (err) {
-      showStatus("Auth init failed: " + err.message, "error");
-    }
-  }
-
-  updateUI();
-
-  saveAppBtn.addEventListener("click", () => {
-    const clientId = clientIdInput.value.trim();
-    const tenantId = tenantIdInput.value.trim() || "common";
-    if (!clientId) {
-      showStatus("Client ID is required.", "error");
-      return;
-    }
-    saveAuthConfig({ clientId, tenantId });
-    showStatus("App config saved! You can now sign in.", "success");
-    initMsal(clientId, tenantId).then(() => updateUI());
-  });
-
-  signInBtn.addEventListener("click", async () => {
-    try {
-      await signIn();
-    } catch (err) {
-      showStatus("Sign in failed: " + err.message, "error");
-    }
-  });
-
-  signOutBtn.addEventListener("click", async () => {
-    await signOut();
-  });
-
-  saveConfigBtn.addEventListener("click", () => {
+  saveBtn.addEventListener("click", () => {
     saveConfig({
       org: orgInput.value.trim(),
       project: projectInput.value.trim(),
+      pat: patInput.value.trim(),
       type: typeSelect.value,
       area: areaInput.value.trim(),
     });
@@ -375,28 +320,21 @@ async function init() {
   fetchBtn.addEventListener("click", async () => {
     const org = orgInput.value.trim();
     const project = projectInput.value.trim();
+    const pat = patInput.value.trim();
     const types = typeSelect.value;
     const area = areaInput.value.trim();
 
-    if (!org || !project) {
-      showStatus("Please fill in Organization and Project.", "error");
-      return;
-    }
-
-    if (!isSignedIn()) {
-      showStatus("Please sign in first.", "error");
+    if (!org || !project || !pat) {
+      showStatus("Please fill in Organization, Project, and PAT.", "error");
       return;
     }
 
     fetchBtn.disabled = true;
-    showStatus("Acquiring access token...", "");
+    showStatus("Fetching work items from Azure DevOps...", "");
     document.getElementById("preview").innerHTML = "";
 
     try {
-      const accessToken = await getAccessToken();
-      showStatus("Fetching work items from Azure DevOps...", "");
-
-      const items = await fetchWorkItems(org, project, accessToken, types, area);
+      const items = await fetchWorkItems(org, project, pat, types, area);
       renderPreview(items);
 
       if (items.length === 0) {

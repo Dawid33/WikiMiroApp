@@ -5,37 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Azure DevOps Roadmap - Miro</title>
     <script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
-    <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="app-container">
       <h1>DevOps Roadmap</h1>
-      <p class="description">Sign in with your Microsoft account to generate a Gantt chart from Azure DevOps.</p>
-
-      <div id="auth-section" class="auth-section">
-        <div id="signed-out">
-          <div class="config-section">
-            <label for="client-id-input">App (Client) ID</label>
-            <input type="text" id="client-id-input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
-
-            <label for="tenant-id-input">Tenant ID</label>
-            <input type="text" id="tenant-id-input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx or 'common'" />
-
-            <button id="save-app-btn" class="btn btn-secondary">Save App Config</button>
-          </div>
-          <button id="sign-in-btn" class="btn btn-primary">Sign in with Microsoft</button>
-        </div>
-
-        <div id="signed-in" style="display: none;">
-          <div class="user-info">
-            <span id="user-name"></span>
-            <button id="sign-out-btn" class="btn-link">Sign out</button>
-          </div>
-        </div>
-      </div>
-
-      <hr />
+      <p class="description">Connect to Azure DevOps and generate a Gantt chart on your Miro board.</p>
 
       <div class="config-section">
         <label for="org-input">Organization</label>
@@ -43,6 +18,10 @@
 
         <label for="project-input">Project</label>
         <input type="text" id="project-input" placeholder="MyProject" />
+
+        <label for="pat-input">Personal Access Token</label>
+        <input type="password" id="pat-input" placeholder="PAT with Work Items read scope" />
+        <p class="field-hint">Stored in your browser only — never sent to this app's server.</p>
 
         <label for="type-select">Work Item Types</label>
         <select id="type-select">
@@ -61,14 +40,13 @@
       <hr />
 
       <div class="actions-section">
-        <button id="fetch-btn" class="btn btn-primary" disabled>Fetch & Generate Gantt Chart</button>
+        <button id="fetch-btn" class="btn btn-primary">Fetch & Generate Gantt Chart</button>
       </div>
 
       <div id="status" class="status-message"></div>
       <div id="preview" class="preview-section"></div>
     </div>
 
-    <script src="auth.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
