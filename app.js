@@ -24,42 +24,47 @@ const GANTT = {
   padding: 40,
 };
 
+function getCollection() {
+  return miro.board.storage.collection("config");
+}
+
 async function loadBoardConfig() {
-  const collection = miro.board.storage.collection("config");
-  const data = await collection.get();
+  const collection = getCollection();
+  const org = await collection.get(STORAGE_KEYS.org);
+  const project = await collection.get(STORAGE_KEYS.project);
+  const pat = await collection.get(STORAGE_KEYS.pat);
+  const type = await collection.get(STORAGE_KEYS.type);
+  const area = await collection.get(STORAGE_KEYS.area);
   return {
-    org: data[STORAGE_KEYS.org] || "",
-    project: data[STORAGE_KEYS.project] || "",
-    pat: data[STORAGE_KEYS.pat] || "",
-    type: data[STORAGE_KEYS.type] || "Epic",
-    area: data[STORAGE_KEYS.area] || "",
+    org: org || "",
+    project: project || "",
+    pat: pat || "",
+    type: type || "Epic",
+    area: area || "",
   };
 }
 
 async function saveBoardConfig(config, userId) {
-  const collection = miro.board.storage.collection("config");
+  const collection = getCollection();
   await collection.set(STORAGE_KEYS.org, config.org);
   await collection.set(STORAGE_KEYS.project, config.project);
   await collection.set(STORAGE_KEYS.pat, config.pat);
   await collection.set(STORAGE_KEYS.type, config.type);
   await collection.set(STORAGE_KEYS.area, config.area);
-  await collection.set(STORAGE_KEYS.adminId, userId);
+  await collection.set(STORAGE_KEYS.adminId, String(userId));
 }
 
 async function getAdminId() {
-  const collection = miro.board.storage.collection("config");
-  const data = await collection.get();
-  return data[STORAGE_KEYS.adminId] || null;
+  const collection = getCollection();
+  return (await collection.get(STORAGE_KEYS.adminId)) || null;
 }
 
 async function clearBoardConfig() {
-  const collection = miro.board.storage.collection("config");
-  await collection.remove(STORAGE_KEYS.org);
-  await collection.remove(STORAGE_KEYS.project);
-  await collection.remove(STORAGE_KEYS.pat);
-  await collection.remove(STORAGE_KEYS.type);
-  await collection.remove(STORAGE_KEYS.area);
-  await collection.remove(STORAGE_KEYS.adminId);
+  const collection = getCollection();
+  const keys = Object.values(STORAGE_KEYS);
+  for (const key of keys) {
+    await collection.remove(key);
+  }
 }
 
 function showStatus(message, type) {
@@ -404,6 +409,9 @@ async function init() {
       return;
     }
 
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
+
     try {
       await saveBoardConfig(newConfig, currentUserId);
       config = newConfig;
@@ -411,6 +419,9 @@ async function init() {
       showStatus("Config saved to board storage!", "success");
     } catch (err) {
       showStatus("Failed to save: " + err.message, "error");
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save to Board";
     }
   });
 
